@@ -1,0 +1,84 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Workspace {
+  id             String   @id @default("default")
+  sourceUrl      String   @default("")
+  activeVideoId  String?
+  selectedIds    Json
+  totalAvailable Int      @default(0)
+  nextOffset     Int      @default(0)
+  hasMore        Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  videos         Video[]
+}
+
+model Video {
+  id           String   @id
+  workspaceId  String
+  title        String
+  description  String
+  url          String
+  thumbnail    String
+  uploadDate   String?
+  duration     Int      @default(0)
+  views        Float    @default(0)
+  channelName  String
+  position     Int
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  workspace    Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  draft        SeoDraft?
+  aiResult     AiSeoResult?
+
+  @@index([workspaceId, position])
+  @@index([channelName])
+}
+
+model SeoDraft {
+  videoId      String   @id
+  title        String
+  description  String
+  updatedAt    DateTime @updatedAt
+  video        Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+}
+
+model AiSeoResult {
+  videoId             String   @id
+  seoTitle            String
+  seoDescription      String
+  titleOptions        Json
+  descriptionOptions  Json
+  primaryKeyword      String   @default("")
+  secondaryKeywords   Json
+  relatedSearchKeywords Json
+  bestTitleIndex      Int      @default(0)
+  bestTitleReason     String   @default("")
+  bestDescriptionIndex Int     @default(0)
+  bestDescriptionReason String @default("")
+  tags                Json
+  keywords            Json
+  hashtags            Json
+  relatedVideoSuggestions Json
+  pinnedComment       String   @default("")
+  chapters            Json
+  ctrSuggestions      Json
+  thumbnailRedesignPrompt String @default("")
+  seoScore             Int
+  provider             String
+  generatedAt          String
+  updatedAt            DateTime @updatedAt
+  video                Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+}

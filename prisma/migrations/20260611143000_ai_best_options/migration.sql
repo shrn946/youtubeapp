@@ -1,0 +1,5 @@
+-- AlterTable
+ALTER TABLE "AiSeoResult" ADD COLUMN "bestTitleIndex" INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE "AiSeoResult" ADD COLUMN "bestTitleReason" TEXT NOT NULL DEFAULT '';
+ALTER TABLE "AiSeoResult" ADD COLUMN "bestDescriptionIndex" INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE "AiSeoResult" ADD COLUMN "bestDescriptionReason" TEXT NOT NULL DEFAULT '';
