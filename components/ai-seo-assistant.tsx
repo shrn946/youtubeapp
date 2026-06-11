@@ -1,9 +1,11 @@
 "use client";
 
+import { Fragment } from "react";
 import { Check, Clipboard, ExternalLink, LoaderCircle, Pencil, RefreshCw, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { cacheBustedUrl } from "@/lib/utils";
 import type { AiSeoResult, Video } from "@/types/video";
 
 function copy(value: string, label: string) {
@@ -31,11 +33,85 @@ function SectionHeading({ title, onCopy }: { title: string; onCopy: () => void }
   );
 }
 
+function DescriptionVariation({
+  description,
+  index,
+  result,
+  onUseDescription,
+  open,
+}: {
+  description: string;
+  index: number;
+  result: AiSeoResult;
+  onUseDescription: (description: string) => void;
+  open?: boolean;
+}) {
+  const isBest = index === result.bestDescriptionIndex;
+  return (
+    <details className={isBest ? "rounded-xl border border-emerald-500/50 bg-emerald-500/5 p-3" : "rounded-xl border p-3"} open={open ?? isBest}>
+      <summary className="cursor-pointer text-xs font-bold">
+        Variation {index + 1}
+        {isBest ? <span className="ml-2 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] uppercase text-emerald-600">Best description</span> : null}
+      </summary>
+      {isBest ? <p className="mt-2 text-xs leading-relaxed text-emerald-700 dark:text-emerald-400">{result.bestDescriptionReason}</p> : null}
+      <p className="mt-3 whitespace-pre-wrap text-xs leading-relaxed text-muted-foreground">{description}</p>
+      <div className="mt-3 flex gap-2">
+        <Button size="sm" variant="outline" onClick={() => copy(description, "Description")}><Clipboard className="size-3.5" /> Copy</Button>
+        <Button size="sm" onClick={() => onUseDescription(description)}><Check className="size-3.5" /> Use Description</Button>
+      </div>
+    </details>
+  );
+}
+
+function ThumbnailRedesign({
+  video,
+  result,
+  onRegenerate,
+  thumbnailVersion,
+}: {
+  video: Video;
+  result: AiSeoResult;
+  onRegenerate: () => void;
+  thumbnailVersion?: number;
+}) {
+  return (
+    <section>
+      <SectionHeading
+        title="Thumbnail redesign prompt"
+        onCopy={() => copy(result.thumbnailRedesignPrompt, "Thumbnail redesign prompt")}
+      />
+      <div className="mb-3 rounded-xl border border-primary/20 bg-primary/5 p-3">
+        <div className="mb-1 flex items-center justify-between gap-3">
+          <span className="text-xs font-bold">Current thumbnail score</span>
+          <span className="rounded-full bg-primary px-2.5 py-1 text-xs font-bold text-primary-foreground">
+            {result.thumbnailScore}/100
+          </span>
+        </div>
+        <p className="text-xs leading-relaxed text-muted-foreground">{result.thumbnailScoreReason}</p>
+      </div>
+      {video.thumbnail ? (
+        <img
+          src={cacheBustedUrl(video.thumbnail, thumbnailVersion)}
+          alt={`Current thumbnail for ${video.title}`}
+          className="mb-3 aspect-video w-full rounded-xl border object-cover"
+        />
+      ) : null}
+      <div className="whitespace-pre-wrap rounded-xl border bg-muted/30 p-3 text-xs leading-relaxed">
+        {result.thumbnailRedesignPrompt}
+      </div>
+      <Button type="button" variant="outline" className="mt-3 w-full" onClick={onRegenerate}>
+        <RefreshCw className="size-4" /> Regenerate AI SEO
+      </Button>
+    </section>
+  );
+}
+
 export function AiSeoAssistant({
   video,
   result,
   loading,
   error,
+  thumbnailVersion,
   onGenerate,
   onUseTitle,
   onUseDescription,
@@ -45,6 +121,7 @@ export function AiSeoAssistant({
   result?: AiSeoResult;
   loading: boolean;
   error?: string;
+  thumbnailVersion?: number;
   onGenerate: (video: Video) => void;
   onUseTitle: (title: string) => void;
   onUseDescription: (description: string) => void;
@@ -106,41 +183,66 @@ export function AiSeoAssistant({
               <h3 className="mb-3 text-sm font-bold">Title alternatives</h3>
               <div className="space-y-2">
                 {result.titleOptions.map((title, index) => (
-                  <div key={`${index}-${title}`} className={index === result.bestTitleIndex ? "rounded-xl border border-emerald-500/50 bg-emerald-500/5 p-3" : "rounded-xl border p-3"}>
+                  <Fragment key={`${index}-${title}`}>
+                  <div className={index === result.bestTitleIndex ? "rounded-xl border border-emerald-500/50 bg-emerald-500/5 p-3" : "rounded-xl border p-3"}>
                     <div className="mb-2 flex items-center justify-between gap-2">
                       <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Option {index + 1} · {title.length}/70</p>
                       {index === result.bestTitleIndex ? <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold uppercase text-emerald-600">Best title</span> : null}
                     </div>
                     <p className="text-sm font-semibold">{title}</p>
-                    {index === result.bestTitleIndex ? <p className="mt-2 text-xs leading-relaxed text-emerald-700 dark:text-emerald-400">{result.bestTitleReason}</p> : null}
+                    {index === result.bestTitleIndex ? (
+                      <p className="mt-2 text-xs leading-relaxed text-emerald-700 dark:text-emerald-400">
+                        <span className="font-bold">Reason for changes:</span> {result.bestTitleReason}
+                      </p>
+                    ) : null}
                     <div className="mt-3 flex gap-2">
                       <Button size="sm" variant="outline" onClick={() => copy(title, "Title")}><Clipboard className="size-3.5" /> Copy</Button>
                       <Button size="sm" onClick={() => onUseTitle(title)}><Check className="size-3.5" /> Use This Title</Button>
                     </div>
                   </div>
+                  {index === result.bestTitleIndex && result.descriptionOptions[0] ? (
+                    <div className="py-2">
+                      <h3 className="mb-3 text-sm font-bold">Description Variation 1</h3>
+                      <DescriptionVariation
+                        description={result.descriptionOptions[0]}
+                        index={0}
+                        result={result}
+                        onUseDescription={onUseDescription}
+                        open
+                      />
+                      <div className="mt-4">
+                        <SectionHeading title="Tags" onCopy={() => copy(result.tags.join(", "), "Tags")} />
+                        <Chips values={result.tags} />
+                      </div>
+                      <div className="mt-4">
+                        <ThumbnailRedesign
+                          video={video}
+                          result={result}
+                          thumbnailVersion={thumbnailVersion}
+                          onRegenerate={() => onGenerate(video)}
+                        />
+                      </div>
+                    </div>
+                  ) : null}
+                  </Fragment>
                 ))}
               </div>
             </section>
 
-            <section>
-              <h3 className="mb-3 text-sm font-bold">Description variations</h3>
+            {result.descriptionOptions.length > 1 ? <section>
+              <h3 className="mb-3 text-sm font-bold">More description variations</h3>
               <div className="space-y-2">
-                {result.descriptionOptions.map((description, index) => (
-                  <details key={index} className={index === result.bestDescriptionIndex ? "rounded-xl border border-emerald-500/50 bg-emerald-500/5 p-3" : "rounded-xl border p-3"} open={index === result.bestDescriptionIndex}>
-                    <summary className="cursor-pointer text-xs font-bold">
-                      Variation {index + 1}
-                      {index === result.bestDescriptionIndex ? <span className="ml-2 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] uppercase text-emerald-600">Best description</span> : null}
-                    </summary>
-                    {index === result.bestDescriptionIndex ? <p className="mt-2 text-xs leading-relaxed text-emerald-700 dark:text-emerald-400">{result.bestDescriptionReason}</p> : null}
-                    <p className="mt-3 whitespace-pre-wrap text-xs leading-relaxed text-muted-foreground">{description}</p>
-                    <div className="mt-3 flex gap-2">
-                      <Button size="sm" variant="outline" onClick={() => copy(description, "Description")}><Clipboard className="size-3.5" /> Copy</Button>
-                      <Button size="sm" onClick={() => onUseDescription(description)}><Check className="size-3.5" /> Use Description</Button>
-                    </div>
-                  </details>
+                {result.descriptionOptions.slice(1).map((description, index) => (
+                  <DescriptionVariation
+                    key={index + 1}
+                    description={description}
+                    index={index + 1}
+                    result={result}
+                    onUseDescription={onUseDescription}
+                  />
                 ))}
               </div>
-            </section>
+            </section> : null}
 
             <section>
               <SectionHeading title="Secondary keywords" onCopy={() => copy(result.secondaryKeywords.join(", "), "Secondary keywords")} />
@@ -154,11 +256,6 @@ export function AiSeoAssistant({
                   <div key={keyword} className="rounded-lg border bg-muted/30 px-3 py-2 text-xs">{keyword}</div>
                 ))}
               </div>
-            </section>
-
-            <section>
-              <SectionHeading title="Tags" onCopy={() => copy(result.tags.join(", "), "Tags")} />
-              <Chips values={result.tags} />
             </section>
 
             <section>
@@ -207,23 +304,6 @@ export function AiSeoAssistant({
                 {result.ctrSuggestions.map((suggestion) => (
                   <div key={suggestion} className="rounded-xl border bg-muted/30 p-3 text-xs leading-relaxed">{suggestion}</div>
                 ))}
-              </div>
-            </section>
-
-            <section>
-              <SectionHeading
-                title="Thumbnail redesign prompt"
-                onCopy={() => copy(result.thumbnailRedesignPrompt, "Thumbnail redesign prompt")}
-              />
-              {video.thumbnail ? (
-                <img
-                  src={video.thumbnail}
-                  alt={`Current thumbnail for ${video.title}`}
-                  className="mb-3 aspect-video w-full rounded-xl border object-cover"
-                />
-              ) : null}
-              <div className="whitespace-pre-wrap rounded-xl border bg-muted/30 p-3 text-xs leading-relaxed">
-                {result.thumbnailRedesignPrompt}
               </div>
             </section>
 

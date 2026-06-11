@@ -22,16 +22,16 @@ export class MockProvider implements AiProvider {
     const draft = generateSeoDraft(video);
     const keyword = primaryKeyword(input.title) || "youtube";
     const titleOptions = [
-      draft.title,
-      `${input.title.slice(0, 50)}: Complete Guide`,
-      `How to ${input.title.slice(0, 54)}`,
-      `7 Practical Tips for ${input.title.slice(0, 43)}`,
-      `${input.title.slice(0, 48)} Made Simple`,
-      `${keyword}: Step-by-Step Tutorial`,
-      `Master ${input.title.slice(0, 50)}`,
-      `${input.title.slice(0, 45)} for Beginners`,
-      `The Complete ${input.title.slice(0, 50)} Guide`,
-      `${input.title.slice(0, 46)}: Tips and Examples`,
+      `${keyword} Tutorial | Step-by-Step Setup`,
+      `${keyword} Tutorial | Build It Without Code`,
+      `${keyword} Guide | Setup and Customization`,
+      `How To Create ${keyword} | WordPress Tutorial`,
+      `${keyword} Tutorial | Responsive Web Design`,
+      `${keyword} Tutorial | Free Setup Guide`,
+      `${keyword} Guide | Practical WordPress Workflow`,
+      `${keyword} Tutorial | Elementor Setup`,
+      `How To Use ${keyword} | Beginner Tutorial`,
+      `${keyword} Tutorial | Design and Configuration`,
     ].map((title) => title.slice(0, 70));
     const secondaryKeywords = Array.from({ length: 8 }, (_, index) => `${keyword} topic ${index + 1}`);
     const relatedSearchKeywords = Array.from({ length: 12 }, (_, index) => `how to use ${keyword} example ${index + 1}`);
@@ -73,8 +73,10 @@ export class MockProvider implements AiProvider {
         "State the viewer benefit more clearly.",
         "Use a specific number only when the content supports it.",
       ],
-      thumbnailRedesignPrompt: `Redesign this YouTube thumbnail for "${input.title}" as a clean, professional 16:9 composition at 1280x720. Preserve the main subject from the original thumbnail, simplify the background, use strong subject separation, high contrast, and one clear focal point. Add no more than 3-5 words of large readable text based on "${keyword}", with generous safe margins for mobile viewing. Use a polished modern web-design tutorial aesthetic, crisp lighting, saturated but controlled colors, and no invented logos, badges, claims, or people.`,
-      seoScore: analyzeSeo(draft.title, description, input.title).score,
+      thumbnailScore: 60,
+      thumbnailScoreReason: "The mock provider cannot inspect the image, so this provisional score treats it as a generic screenshot until a vision-capable provider analyzes the focal result, text, contrast, clutter, and mobile readability.",
+      thumbnailRedesignPrompt: `Create a professional 16:9 YouTube thumbnail at 1280x720 for "${input.title}". Show the completed ${keyword} result as the main focal point occupying 60-70% of the canvas. Use a dark modern background, a bright high-contrast focal element, large bold white text reading "${keyword.toUpperCase().slice(0, 30)}" in only 2-4 words, a subtle glow, and one red arrow pointing to the most impressive feature. Add at most one relevant WordPress, Elementor, or WooCommerce logo in a corner. Focus on the final visual result rather than the editing interface. Keep the composition clean, readable at 168x94 pixels, and free from excessive text or decorative clutter.`,
+      seoScore: Math.max(1, analyzeSeo(draft.title, description, input.title).score),
       provider: this.name,
       generatedAt: new Date().toISOString(),
     };

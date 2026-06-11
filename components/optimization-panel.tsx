@@ -13,6 +13,7 @@ export function OptimizationPanel({
   aiResult,
   aiLoading,
   aiError,
+  thumbnailVersion,
   onSaveDraft,
   onGenerateAi,
   onUseTitle,
@@ -24,6 +25,7 @@ export function OptimizationPanel({
   aiResult?: AiSeoResult;
   aiLoading: boolean;
   aiError?: string;
+  thumbnailVersion?: number;
   onSaveDraft: (id: string, draft: VideoDraft) => void;
   onGenerateAi: (video: Video) => void;
   onUseTitle: (title: string) => void;
@@ -34,7 +36,7 @@ export function OptimizationPanel({
 
   useEffect(() => {
     setTab("seo");
-  }, [video?.id]);
+  }, [video?.id, video?.title, video?.description]);
 
   return (
     <div className="min-w-0">
@@ -70,6 +72,7 @@ export function OptimizationPanel({
           result={aiResult}
           loading={aiLoading}
           error={aiError}
+          thumbnailVersion={thumbnailVersion}
           onGenerate={onGenerateAi}
           onUseTitle={onUseTitle}
           onUseDescription={onUseDescription}

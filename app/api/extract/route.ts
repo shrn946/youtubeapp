@@ -119,11 +119,13 @@ export async function POST(request: Request) {
     if (!parsed.success) {
       return NextResponse.json({ error: "Enter a valid channel URL or @handle." }, { status: 400 });
     }
-    const { offset, limit } = parsed.data;
+    const { offset, limit, refresh } = parsed.data;
     const url = normalizeYouTubeUrl(parsed.data.url);
     const cacheKey = `${url}#${offset}:${limit}`;
-    const cached = getCached(cacheKey);
-    if (cached) return NextResponse.json(cached);
+    if (!refresh) {
+      const cached = getCached(cacheKey);
+      if (cached) return NextResponse.json(cached);
+    }
 
     const result = await runExtractor(url, offset, limit);
     setCached(cacheKey, result);

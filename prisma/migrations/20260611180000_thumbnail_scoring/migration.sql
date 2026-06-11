@@ -1,0 +1,2 @@
+ALTER TABLE "AiSeoResult" ADD COLUMN "thumbnailScore" INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE "AiSeoResult" ADD COLUMN "thumbnailScoreReason" TEXT NOT NULL DEFAULT '';

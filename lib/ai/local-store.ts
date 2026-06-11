@@ -21,6 +21,9 @@ function normalizeResult(result: AiSeoResult): AiSeoResult {
     relatedVideoSuggestions: result.relatedVideoSuggestions ?? [],
     pinnedComment: result.pinnedComment ?? "",
     chapters: result.chapters ?? [],
+    thumbnailScore: Number.isInteger(result.thumbnailScore) ? result.thumbnailScore : 0,
+    thumbnailScoreReason: result.thumbnailScoreReason
+      || "Regenerate this video to evaluate the current thumbnail.",
     thumbnailRedesignPrompt: result.thumbnailRedesignPrompt
       || "Regenerate this video to create a thumbnail redesign prompt.",
   };

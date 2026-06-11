@@ -37,6 +37,8 @@ export async function GET() {
       pinnedComment: row.pinnedComment,
       chapters: row.chapters as Array<{ timestamp: string; title: string }>,
       ctrSuggestions: row.ctrSuggestions as string[],
+      thumbnailScore: row.thumbnailScore,
+      thumbnailScoreReason: row.thumbnailScoreReason,
       thumbnailRedesignPrompt: row.thumbnailRedesignPrompt,
       seoScore: row.seoScore,
       provider: row.provider,

@@ -36,4 +36,5 @@ export const extractRequestSchema = z.object({
   url: z.string().trim().min(2).max(500),
   offset: z.number().int().min(0).max(10000).default(0),
   limit: z.number().int().min(1).max(50).default(50),
+  refresh: z.boolean().default(false),
 });

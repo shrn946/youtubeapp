@@ -77,6 +77,8 @@ export interface AiExportRow {
   "Related Videos": string;
   "Pinned Comment": string;
   Chapters: string;
+  "Thumbnail Score": number;
+  "Thumbnail Score Reason": string;
   "Thumbnail Redesign Prompt": string;
   "Upload Date": string;
   Duration: string;
@@ -107,6 +109,8 @@ export function makeAiExportRows(
       "Related Videos": ai?.relatedVideoSuggestions.map((item) => `${item.title}: ${item.url}`).join("\n") || "",
       "Pinned Comment": ai?.pinnedComment || "",
       Chapters: ai?.chapters.map((chapter) => `${chapter.timestamp} ${chapter.title}`).join("\n") || "",
+      "Thumbnail Score": ai?.thumbnailScore ?? 0,
+      "Thumbnail Score Reason": ai?.thumbnailScoreReason || "",
       "Thumbnail Redesign Prompt": ai?.thumbnailRedesignPrompt || "",
       "Upload Date": video.uploadDate ?? "",
       Duration: formatDuration(video.duration),
@@ -129,7 +133,8 @@ export async function exportAiExcel(rows: AiExportRow[]) {
   sheet["!cols"] = [
     { wch: 45 }, { wch: 42 }, { wch: 70 }, { wch: 45 }, { wch: 70 },
     { wch: 28 }, { wch: 55 }, { wch: 70 }, { wch: 55 }, { wch: 55 },
-    { wch: 35 }, { wch: 70 }, { wch: 70 }, { wch: 45 }, { wch: 90 },
+    { wch: 35 }, { wch: 70 }, { wch: 70 }, { wch: 45 }, { wch: 16 },
+    { wch: 70 }, { wch: 90 },
     { wch: 14 }, { wch: 12 }, { wch: 14 }, { wch: 12 },
   ];
   const workbook = XLSX.utils.book_new();

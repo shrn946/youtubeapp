@@ -54,6 +54,8 @@ export interface AiSeoResult {
     title: string;
   }>;
   ctrSuggestions: string[];
+  thumbnailScore: number;
+  thumbnailScoreReason: string;
   thumbnailRedesignPrompt: string;
   seoScore: number;
   provider: string;
@@ -67,7 +69,7 @@ export interface SeoAnalysis {
   suggestions: string[];
 }
 
-export type SortKey = "uploadDate" | "views" | "title";
+export type SortKey = "uploadDate" | "views" | "title" | "seoScore";
 export type SortDirection = "asc" | "desc";
 
 export interface ExtractResponse {

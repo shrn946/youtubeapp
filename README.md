@@ -59,7 +59,7 @@ Available providers:
 
 AI results are cached server-side for 24 hours and persisted in browser IndexedDB. Bulk generation runs two requests concurrently, retries failures once, and supports retrying failed videos.
 
-Each AI package includes a primary keyword, secondary keywords, related searches, ten title options, formatted descriptions, tags, hashtags, verified related videos, a pinned comment, suggested chapters, CTR guidance, a thumbnail-aware redesign prompt, and an SEO score.
+Each AI package includes a primary keyword, secondary keywords, related searches, ten title options, formatted descriptions, tags, hashtags, verified related videos, a pinned comment, suggested chapters, CTR guidance, a thumbnail score with visual reasoning, a thumbnail-aware redesign prompt, and an SEO score.
 
 ## Production
 

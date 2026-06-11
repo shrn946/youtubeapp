@@ -9,7 +9,7 @@ interface DescriptionSeoData {
 }
 
 const SUBSCRIBE_BLOCK = [
-  "Subscribe for more WordPress & Elementor Tutorials:",
+  "🔔 Subscribe for more WordPress & Elementor Tutorials:",
   "https://www.youtube.com/@wp_design_lab",
 ].join("\n");
 
@@ -19,7 +19,7 @@ function escapeRegExp(value: string): string {
 
 function removeKnownSections(value: string): string {
   return value
-    .replace(/\b(?:Topics Covered|Resources?|Related Videos?|Related Searches|Focus Keywords|Tags)\s*:[\s\S]*$/i, "")
+    .replace(/\b(?:Topics Covered|Plugin\s*&\s*Resource Links|Resources?|Related Videos?|Related Searches|Focus Keywords|Tags)\s*:[\s\S]*$/i, "")
     .trim();
 }
 
@@ -79,10 +79,6 @@ export function formatAiDescription(
     .replace(/\s+/g, " ")
     .match(/[^.!?]*(?:subscribe|like this video|leave a comment|share this video|join the channel)[^.!?]*[.!?]/i)?.[0]
     ?.trim();
-  if (callToAction && !cleanBody.toLowerCase().includes(callToAction.toLowerCase())) {
-    sections.push(callToAction);
-  }
-
   if (seo?.secondaryKeywords.length) {
     sections.push([
       "Topics Covered:",
@@ -93,17 +89,9 @@ export function formatAiDescription(
 
   if (protectedLinks.length) {
     sections.push([
-      "Resources:",
+      "🔌 Plugin & Resource Links:",
       "",
-      ...protectedLinks.flatMap((url) => [url, ""]),
-    ].join("\n").trimEnd());
-  }
-
-  if (relatedVideos.length) {
-    sections.push([
-      "Related Videos:",
-      "",
-      ...relatedVideos.flatMap((video) => [video.title, video.url, ""]),
+      ...protectedLinks.flatMap((url) => [`🔌 ${url}`, ""]),
     ].join("\n").trimEnd());
   }
 
@@ -126,6 +114,20 @@ export function formatAiDescription(
 
   if (seo?.tags.length) {
     sections.push(`Tags:\n\n${seo.tags.join(", ")}`);
+  }
+
+  if (relatedVideos.length) {
+    sections.push([
+      "▶️ Related Videos:",
+      "",
+      ...relatedVideos.flatMap((video) => [`▶️ ${video.title}`, video.url, ""]),
+    ].join("\n").trimEnd());
+  }
+
+  if (callToAction && !cleanBody.toLowerCase().includes(callToAction.toLowerCase())) {
+    sections.push(callToAction);
+  } else {
+    sections.push("If this tutorial helped you, like the video, share your questions in the comments, and subscribe for more practical WordPress and web design tutorials.");
   }
 
   if (seo?.hashtags.length) {

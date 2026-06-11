@@ -75,6 +75,8 @@ model AiSeoResult {
   pinnedComment       String   @default("")
   chapters            Json
   ctrSuggestions      Json
+  thumbnailScore      Int      @default(0)
+  thumbnailScoreReason String  @default("")
   thumbnailRedesignPrompt String @default("")
   seoScore             Int
   provider             String

@@ -31,7 +31,7 @@ export async function POST(request: Request) {
 
     const providerName = process.env.AI_PROVIDER || "gemini";
     const cacheKey = createHash("sha256")
-      .update(`full-seo-v5-thumbnail:${providerName}:${JSON.stringify(parsed.data)}`)
+      .update(`full-seo-v7-thumbnail-formula:${providerName}:${JSON.stringify(parsed.data)}`)
       .digest("hex");
     const cached = getAiCache(cacheKey);
     if (cached) return NextResponse.json({ result: cached, cached: true });

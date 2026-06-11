@@ -51,8 +51,10 @@ export const aiSeoOutputSchema = z.object({
     title: z.string().trim().min(1).max(150),
   })).min(3).max(20),
   ctrSuggestions: z.array(z.string().trim().min(1).max(500)).min(3).max(8),
+  thumbnailScore: z.number().int().min(1).max(100),
+  thumbnailScoreReason: z.string().trim().min(1).max(1000),
   thumbnailRedesignPrompt: z.string().trim().min(1).max(4000),
-  seoScore: z.number().int().min(0).max(100),
+  seoScore: z.number().int().min(1).max(100),
 });
 
 export const aiSeoJsonSchema = {
@@ -155,11 +157,21 @@ export const aiSeoJsonSchema = {
       maxItems: 8,
       items: { type: "string" },
     },
+    thumbnailScore: {
+      type: "integer",
+      minimum: 1,
+      maximum: 100,
+      description: "Current thumbnail quality score based on clarity, focal result, text, contrast, and mobile readability.",
+    },
+    thumbnailScoreReason: {
+      type: "string",
+      description: "Concise evidence-based explanation of the current thumbnail score.",
+    },
     thumbnailRedesignPrompt: {
       type: "string",
       description: "A production-ready image editing prompt based on the supplied thumbnail.",
     },
-    seoScore: { type: "integer", minimum: 0, maximum: 100 },
+    seoScore: { type: "integer", minimum: 1, maximum: 100 },
   },
   required: [
     "seoTitle",
@@ -180,6 +192,8 @@ export const aiSeoJsonSchema = {
     "pinnedComment",
     "chapters",
     "ctrSuggestions",
+    "thumbnailScore",
+    "thumbnailScoreReason",
     "thumbnailRedesignPrompt",
     "seoScore",
   ],

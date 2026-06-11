@@ -26,3 +26,14 @@ export function formatDate(value: string | null): string {
     ? value
     : new Intl.DateTimeFormat("en-US", { year: "numeric", month: "short", day: "numeric", timeZone: "UTC" }).format(date);
 }
+
+export function cacheBustedUrl(value: string, version?: number): string {
+  if (!value || !version) return value;
+  try {
+    const url = new URL(value);
+    url.searchParams.set("_refresh", String(version));
+    return url.toString();
+  } catch {
+    return value;
+  }
+}

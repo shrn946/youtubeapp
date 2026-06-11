@@ -26,7 +26,7 @@ export function SeoEditor({ video, savedDraft, onSave }: {
   useEffect(() => {
     setDraft(savedDraft ?? { title: video?.title ?? "", description: video?.description ?? "" });
     setGenerated(false);
-  }, [savedDraft, video]);
+  }, [savedDraft, video?.id, video?.title, video?.description]);
 
   const analysis = useMemo(
     () => analyzeSeo(draft.title, draft.description, video?.title),

@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Download, FileSpreadsheet, LoaderCircle, Plus, Search, ShieldCheck, Sparkles } from "lucide-react";
+import { Download, FileSpreadsheet, LoaderCircle, Plus, RefreshCw, Search, ShieldCheck, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { Logo } from "@/components/logo";
 import { OptimizationPanel } from "@/components/optimization-panel";
 import { Statistics } from "@/components/statistics";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { UpcomingVideoIdeas } from "@/components/upcoming-video-ideas";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -220,14 +221,26 @@ export function Dashboard() {
                   Statistics and exports currently include loaded videos only.
                 </p>
               </div>
-              {workspace.hasMore ? (
-                <Button onClick={workspace.loadMore} disabled={workspace.loadingMore || workspace.loading}>
-                  {workspace.loadingMore ? <LoaderCircle className="size-4 animate-spin" /> : <Plus className="size-4" />}
-                  {workspace.loadingMore ? "Loading next batch..." : "Load Next 50"}
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  variant="outline"
+                  onClick={workspace.refreshVideos}
+                  disabled={workspace.refreshing || workspace.loadingMore || workspace.loading}
+                >
+                  {workspace.refreshing
+                    ? <LoaderCircle className="size-4 animate-spin" />
+                    : <RefreshCw className="size-4" />}
+                  {workspace.refreshing ? "Refreshing records..." : "Refresh Videos"}
                 </Button>
-              ) : (
-                <span className="text-xs font-semibold text-emerald-600">All public videos loaded</span>
-              )}
+                {workspace.hasMore ? (
+                  <Button onClick={workspace.loadMore} disabled={workspace.loadingMore || workspace.loading || workspace.refreshing}>
+                    {workspace.loadingMore ? <LoaderCircle className="size-4 animate-spin" /> : <Plus className="size-4" />}
+                    {workspace.loadingMore ? "Loading next batch..." : "Load Next 50"}
+                  </Button>
+                ) : (
+                  <span className="text-xs font-semibold text-emerald-600">All public videos loaded</span>
+                )}
+              </div>
             </Card>
             <Card className="p-4">
               <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
@@ -289,29 +302,39 @@ export function Dashboard() {
               ) : null}
             </Card>
             <div className="grid min-w-0 gap-5 2xl:grid-cols-[minmax(0,1.65fr)_minmax(420px,.75fr)]">
-              <VideoTable
-                videos={workspace.paged}
-                totalFiltered={workspace.filtered.length}
-                selected={workspace.selected}
-                activeId={workspace.activeId}
-                query={workspace.query}
-                sortKey={workspace.sortKey}
-                sortDirection={workspace.sortDirection}
-                page={workspace.page}
-                pageCount={workspace.pageCount}
-                onQuery={workspace.setQuery}
-                onSort={workspace.changeSort}
-                onPage={workspace.setPage}
-                onSelect={workspace.toggleSelected}
-                onSelectPage={workspace.togglePage}
-                onActivate={workspace.setActiveId}
-              />
+              <div className="min-w-0 space-y-5">
+                <VideoTable
+                  videos={workspace.paged}
+                  totalFiltered={workspace.filtered.length}
+                  selected={workspace.selected}
+                  editedIds={workspace.editedIds}
+                  editedOnly={workspace.editedOnly}
+                  refreshingIds={workspace.refreshingIds}
+                  thumbnailVersions={workspace.thumbnailVersions}
+                  activeId={workspace.activeId}
+                  query={workspace.query}
+                  sortKey={workspace.sortKey}
+                  sortDirection={workspace.sortDirection}
+                  page={workspace.page}
+                  pageCount={workspace.pageCount}
+                  onQuery={workspace.setQuery}
+                  onEditedOnly={workspace.setEditedOnly}
+                  onRefresh={(video) => { void workspace.refreshVideo(video); }}
+                  onSort={workspace.changeSort}
+                  onPage={workspace.setPage}
+                  onSelect={workspace.toggleSelected}
+                  onSelectPage={workspace.togglePage}
+                  onActivate={workspace.setActiveId}
+                />
+                <UpcomingVideoIdeas videos={workspace.videos} activeVideo={workspace.activeVideo} />
+              </div>
               <OptimizationPanel
                 video={workspace.activeVideo}
                 savedDraft={workspace.activeVideo ? workspace.drafts[workspace.activeVideo.id] : undefined}
                 aiResult={workspace.activeVideo ? ai.results[workspace.activeVideo.id] : undefined}
                 aiLoading={workspace.activeVideo ? ai.statuses[workspace.activeVideo.id] === "loading" : false}
                 aiError={workspace.activeVideo ? ai.errors[workspace.activeVideo.id] : undefined}
+                thumbnailVersion={workspace.activeVideo ? workspace.thumbnailVersions[workspace.activeVideo.id] : undefined}
                 onSaveDraft={workspace.updateDraft}
                 onGenerateAi={(video) => { void ai.generate(video); }}
                 onUseTitle={useAiTitle}
