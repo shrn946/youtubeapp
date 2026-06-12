@@ -2,12 +2,12 @@
 
 import { useRef } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { ArrowDown, ArrowUp, ArrowUpDown, ChevronLeft, ChevronRight, ExternalLink, LoaderCircle, Pencil, RefreshCw, Search } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, Captions, CheckCircle2, ChevronLeft, ChevronRight, ExternalLink, LoaderCircle, Pencil, RefreshCw, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { analyzeSeo } from "@/lib/seo";
-import { cacheBustedUrl, cn, formatDate, formatDuration, formatNumber } from "@/lib/utils";
+import { cacheBustedUrl, cn, formatDuration, formatNumber, formatShortDate } from "@/lib/utils";
 import type { SortDirection, SortKey, Video } from "@/types/video";
 
 interface Props {
@@ -32,9 +32,13 @@ interface Props {
   onSelect: (id: string) => void;
   onSelectPage: () => void;
   onActivate: (id: string) => void;
+  onGenerateSubtitles: (video: Video) => void;
+  onPreviewSubtitles: (video: Video) => void;
+  subtitleLoadingIds: Set<string>;
+  subtitleGeneratedIds: Set<string>;
 }
 
-const columns = "grid-cols-[42px_88px_minmax(220px,1.25fr)_minmax(260px,1.5fr)_120px_130px_110px]";
+const columns = "grid-cols-[32px_72px_minmax(180px,1.25fr)_minmax(160px,1fr)_80px_64px_64px]";
 
 function scoreColor(score: number): string {
   if (score >= 80) return "text-emerald-600";
@@ -70,13 +74,13 @@ export function VideoTable(props: Props) {
   const virtualizer = useVirtualizer({
     count: props.videos.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 94,
+    estimateSize: () => 106,
     overscan: 8,
   });
   const allPageSelected = props.videos.length > 0 && props.videos.every((video) => props.selected.has(video.id));
 
   return (
-    <Card className="min-w-0 overflow-hidden">
+    <Card id="video-library" className="scroll-mt-24 min-w-0 overflow-hidden">
       <div className="flex flex-col gap-3 border-b p-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="font-bold">Video library</h2>
@@ -99,15 +103,15 @@ export function VideoTable(props: Props) {
         </div>
       </div>
 
-      <div className="overflow-x-auto">
-        <div className="min-w-[1120px]">
+      <div className="overflow-hidden">
+        <div className="min-w-0">
           <div className={cn("grid h-11 items-center gap-3 border-b bg-muted/50 px-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground", columns)}>
             <input type="checkbox" aria-label="Select this page" checked={allPageSelected} onChange={props.onSelectPage} className="size-4 accent-[hsl(var(--primary))]" />
             <span>Thumbnail</span>
             <SortButton field="title" current={props.sortKey} direction={props.sortDirection} onSort={props.onSort}>Title</SortButton>
             <span>Description</span>
             <SortButton field="seoScore" current={props.sortKey} direction={props.sortDirection} onSort={props.onSort}>Current SEO</SortButton>
-            <SortButton field="uploadDate" current={props.sortKey} direction={props.sortDirection} onSort={props.onSort}>Published</SortButton>
+            <SortButton field="uploadDate" current={props.sortKey} direction={props.sortDirection} onSort={props.onSort}>Date</SortButton>
             <SortButton field="views" current={props.sortKey} direction={props.sortDirection} onSort={props.onSort}>Views</SortButton>
           </div>
           <div ref={parentRef} className="scrollbar-thin h-[564px] overflow-auto">
@@ -132,7 +136,7 @@ export function VideoTable(props: Props) {
                       onClick={(event) => event.stopPropagation()}
                       className="size-4 accent-[hsl(var(--primary))]"
                     />
-                    <div className="relative h-12 w-[84px] overflow-hidden rounded-lg bg-muted">
+                    <div className="relative h-10 w-[70px] overflow-hidden rounded-lg bg-muted">
                       {video.thumbnail ? <img src={cacheBustedUrl(video.thumbnail, props.thumbnailVersions[video.id])} alt="" loading="lazy" className="h-full w-full object-cover" /> : null}
                       <button
                         type="button"
@@ -178,6 +182,33 @@ export function VideoTable(props: Props) {
                         >
                           Edit in Studio <Pencil className="size-3" />
                         </a>
+                        {props.subtitleGeneratedIds.has(video.id) ? (
+                          <button
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              props.onPreviewSubtitles(video);
+                            }}
+                            className="focus-ring inline-flex items-center gap-1 rounded text-xs font-semibold text-emerald-600 hover:underline"
+                          >
+                            <CheckCircle2 className="size-3" /> Subtitle generated · Preview
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            disabled={props.subtitleLoadingIds.has(video.id)}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              props.onGenerateSubtitles(video);
+                            }}
+                            className="focus-ring inline-flex items-center gap-1 rounded text-xs font-semibold text-primary hover:underline disabled:cursor-wait disabled:opacity-60"
+                          >
+                            {props.subtitleLoadingIds.has(video.id)
+                              ? <LoaderCircle className="size-3 animate-spin" />
+                              : <Captions className="size-3" />}
+                            {props.subtitleLoadingIds.has(video.id) ? "Generating subtitles..." : "Generate Subtitles"}
+                          </button>
+                        )}
                       </div>
                     </div>
                     <p className="line-clamp-3 text-xs leading-relaxed text-muted-foreground">{video.description || "No description"}</p>
@@ -189,7 +220,7 @@ export function VideoTable(props: Props) {
                         Desc {seo.descriptionScore}/50
                       </p>
                     </div>
-                    <span className="text-xs">{formatDate(video.uploadDate)}</span>
+                    <span className="whitespace-nowrap text-[11px]">{formatShortDate(video.uploadDate)}</span>
                     <span className="font-semibold">{formatNumber(video.views)}</span>
                   </div>
                 );

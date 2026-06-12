@@ -9,6 +9,9 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 export const metadata: Metadata = {
   title: "YouTube SEO Manager",
   description: "Extract, analyze, optimize, and export YouTube video metadata.",
+  icons: {
+    icon: "/icon.svg",
+  },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

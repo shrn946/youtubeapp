@@ -42,6 +42,7 @@ model Video {
   workspace    Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   draft        SeoDraft?
   aiResult     AiSeoResult?
+  subtitles   Subtitle[]
 
   @@index([workspaceId, position])
   @@index([channelName])
@@ -53,6 +54,23 @@ model SeoDraft {
   description  String
   updatedAt    DateTime @updatedAt
   video        Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+}
+
+model Subtitle {
+  id          String   @id
+  videoId     String
+  language    String
+  srt         String
+  filename    String
+  source      String
+  provider    String
+  inputHash   String
+  generatedAt String
+  updatedAt   DateTime @updatedAt
+  video       Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@unique([videoId, language])
+  @@index([videoId])
 }
 
 model AiSeoResult {

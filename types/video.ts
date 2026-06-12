@@ -62,6 +62,16 @@ export interface AiSeoResult {
   generatedAt: string;
 }
 
+export interface SubtitleResult {
+  videoId: string;
+  language: string;
+  srt: string;
+  filename: string;
+  source: "transcript" | "metadata";
+  provider: string;
+  generatedAt: string;
+}
+
 export interface SeoAnalysis {
   score: number;
   titleScore: number;

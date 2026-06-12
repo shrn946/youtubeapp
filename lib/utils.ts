@@ -27,6 +27,19 @@ export function formatDate(value: string | null): string {
     : new Intl.DateTimeFormat("en-US", { year: "numeric", month: "short", day: "numeric", timeZone: "UTC" }).format(date);
 }
 
+export function formatShortDate(value: string | null): string {
+  if (!value) return "-";
+  const date = new Date(`${value}T00:00:00Z`);
+  return Number.isNaN(date.getTime())
+    ? value
+    : new Intl.DateTimeFormat("en-US", {
+      year: "2-digit",
+      month: "numeric",
+      day: "numeric",
+      timeZone: "UTC",
+    }).format(date);
+}
+
 export function cacheBustedUrl(value: string, version?: number): string {
   if (!value || !version) return value;
   try {

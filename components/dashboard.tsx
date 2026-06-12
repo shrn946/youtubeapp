@@ -1,19 +1,22 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Download, FileSpreadsheet, LoaderCircle, Plus, RefreshCw, Search, ShieldCheck, Sparkles } from "lucide-react";
+import { Download, FileSpreadsheet, Lightbulb, ListVideo, LoaderCircle, PlaySquare, Plus, RefreshCw, Search, ShieldCheck, Sparkles, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
 import { Logo } from "@/components/logo";
 import { OptimizationPanel } from "@/components/optimization-panel";
 import { Statistics } from "@/components/statistics";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { UpcomingVideoIdeas } from "@/components/upcoming-video-ideas";
+import { ContentTopicPlanner } from "@/components/content-topic-planner";
+import { SubtitleModal } from "@/components/subtitle-modal";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { VideoTable } from "@/components/video-table";
 import { useVideoWorkspace } from "@/hooks/use-video-workspace";
 import { useAiSeo } from "@/hooks/use-ai-seo";
+import { useSubtitles } from "@/hooks/use-subtitles";
 import { analyzeSeo } from "@/lib/seo";
 import {
   exportAiCsv,
@@ -38,6 +41,7 @@ function LoadingSkeleton() {
 export function Dashboard() {
   const workspace = useVideoWorkspace();
   const ai = useAiSeo(workspace.videos);
+  const subtitles = useSubtitles();
   const [channelUrl, setChannelUrl] = useState("https://www.youtube.com/@wp_design_lab");
   const isCurrentChannel = Boolean(
     workspace.sourceUrl && channelUrl.trim() === workspace.sourceUrl.trim(),
@@ -120,6 +124,20 @@ export function Dashboard() {
       description: workspace.drafts[video.id]?.description || result.seoDescription,
     });
     toast.success("AI result saved as the video draft.");
+  }
+
+  function navigateToSection(target: "library" | "ideas" | "related" | "top" | "topics") {
+    if (target === "ideas" || target === "related" || target === "top") {
+      window.dispatchEvent(new CustomEvent("video-ideas-tab", { detail: target }));
+    }
+    const id = target === "library"
+      ? "video-library"
+      : target === "topics"
+        ? "planned-topics"
+        : "video-ideas";
+    window.requestAnimationFrame(() => {
+      document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
   }
 
   return (
@@ -207,6 +225,24 @@ export function Dashboard() {
             </div>
           )}
         </Card>
+
+        <nav aria-label="Dashboard sections" className="flex flex-wrap gap-2 rounded-xl border bg-card p-2 shadow-sm">
+          <Button variant="ghost" size="sm" disabled={!workspace.videos.length} onClick={() => navigateToSection("library")}>
+            <ListVideo className="size-4" /> Video Library
+          </Button>
+          <Button variant="ghost" size="sm" disabled={!workspace.videos.length} onClick={() => navigateToSection("ideas")}>
+            <Lightbulb className="size-4" /> Upcoming Video Ideas
+          </Button>
+          <Button variant="ghost" size="sm" disabled={!workspace.videos.length} onClick={() => navigateToSection("related")}>
+            <PlaySquare className="size-4" /> Related Channel Videos
+          </Button>
+          <Button variant="ghost" size="sm" disabled={!workspace.videos.length} onClick={() => navigateToSection("top")}>
+            <TrendingUp className="size-4" /> Top Website Topic Videos
+          </Button>
+          <Button variant="ghost" size="sm" disabled={!workspace.videos.length} onClick={() => navigateToSection("topics")}>
+            <Sparkles className="size-4" /> All Planned Topics
+          </Button>
+        </nav>
 
         {workspace.loading && !workspace.videos.length ? <LoadingSkeleton /> : workspace.videos.length ? (
           <>
@@ -325,8 +361,13 @@ export function Dashboard() {
                   onSelect={workspace.toggleSelected}
                   onSelectPage={workspace.togglePage}
                   onActivate={workspace.setActiveId}
+                  onGenerateSubtitles={(video) => { void subtitles.generate(video); }}
+                  onPreviewSubtitles={subtitles.preview}
+                  subtitleLoadingIds={subtitles.loadingIds}
+                  subtitleGeneratedIds={new Set(Object.keys(subtitles.results))}
                 />
                 <UpcomingVideoIdeas videos={workspace.videos} activeVideo={workspace.activeVideo} />
+                <ContentTopicPlanner videos={workspace.videos} />
               </div>
               <OptimizationPanel
                 video={workspace.activeVideo}
@@ -353,6 +394,18 @@ export function Dashboard() {
           </Card>
         )}
       </main>
+      <SubtitleModal
+        open={subtitles.open}
+        video={subtitles.activeVideo}
+        result={subtitles.activeResult}
+        loading={Boolean(subtitles.activeVideo && subtitles.loadingIds.has(subtitles.activeVideo.id))}
+        error={subtitles.error}
+        onClose={subtitles.close}
+        onRegenerate={() => {
+          if (subtitles.activeVideo) void subtitles.generate(subtitles.activeVideo, true);
+        }}
+        onDownload={subtitles.download}
+      />
     </div>
   );
 }

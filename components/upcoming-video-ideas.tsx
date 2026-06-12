@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Clipboard, ExternalLink, Lightbulb, LoaderCircle, PlaySquare, RefreshCw, Search, Sparkles } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Clipboard, ExternalLink, Lightbulb, LoaderCircle, PlaySquare, RefreshCw, Search, Sparkles, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -33,7 +33,7 @@ function potentialClass(value: "High" | "Medium" | "Emerging"): string {
 }
 
 export function UpcomingVideoIdeas({ videos, activeVideo }: { videos: Video[]; activeVideo: Video | null }) {
-  const [tab, setTab] = useState<"ideas" | "related">("ideas");
+  const [tab, setTab] = useState<"ideas" | "related" | "top">("ideas");
   const [result, setResult] = useState<UpcomingIdeasResult | null>(null);
   const [ideasLoading, setIdeasLoading] = useState(false);
   const [ideasError, setIdeasError] = useState("");
@@ -41,6 +41,19 @@ export function UpcomingVideoIdeas({ videos, activeVideo }: { videos: Video[]; a
   const [relatedQuery, setRelatedQuery] = useState("");
   const [relatedLoading, setRelatedLoading] = useState(false);
   const [relatedError, setRelatedError] = useState("");
+  const [topVideos, setTopVideos] = useState<RelatedVideo[]>([]);
+  const [topQuery, setTopQuery] = useState("");
+  const [topLoading, setTopLoading] = useState(false);
+  const [topError, setTopError] = useState("");
+
+  useEffect(() => {
+    const selectTab = (event: Event) => {
+      const requested = (event as CustomEvent<"ideas" | "related" | "top">).detail;
+      if (requested === "ideas" || requested === "related" || requested === "top") setTab(requested);
+    };
+    window.addEventListener("video-ideas-tab", selectTab);
+    return () => window.removeEventListener("video-ideas-tab", selectTab);
+  }, []);
 
   async function generateIdeas(refresh = false) {
     if (!videos.length || ideasLoading) return;
@@ -103,9 +116,87 @@ export function UpcomingVideoIdeas({ videos, activeVideo }: { videos: Video[]; a
     }
   }
 
+  async function findTopTopicVideos() {
+    if (!videos.length || topLoading) return;
+    const topTitles = [...videos]
+      .sort((a, b) => b.views - a.views)
+      .slice(0, 5)
+      .map((video) => video.title);
+    const query = result?.niche || `${videos[0]?.channelName || "WordPress"} ${topTitles.join(" ")}`.slice(0, 300);
+    setTopLoading(true);
+    setTopError("");
+    try {
+      const response = await fetch("/api/related-videos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          query,
+          currentChannel: videos[0]?.channelName || "",
+          excludedIds: videos.map((video) => video.id),
+        }),
+      });
+      const data = await response.json() as { videos?: RelatedVideo[]; query?: string; error?: string };
+      if (!response.ok || !data.videos) throw new Error(data.error || "Top topic video search failed.");
+      setTopVideos(data.videos);
+      setTopQuery(data.query || query);
+      toast.success(`${data.videos.length} top website-topic videos found.`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Top topic video search failed.";
+      setTopError(message);
+      toast.error(message);
+    } finally {
+      setTopLoading(false);
+    }
+  }
+
+  function videoResults(items: RelatedVideo[], query: string, loading: boolean, error: string, emptyMessage: string) {
+    return (
+      <>
+        {error ? <div className="m-4 rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-xs text-red-600">{error}</div> : null}
+        {loading && !items.length ? (
+          <div className="grid gap-3 p-4 md:grid-cols-2">
+            {Array.from({ length: 4 }).map((_, index) => <div key={index} className="h-52 animate-pulse rounded-xl bg-muted" />)}
+          </div>
+        ) : null}
+        {items.length ? (
+          <div className="p-4">
+            <p className="mb-3 text-xs text-muted-foreground">Search context: <span className="font-semibold text-foreground">{query}</span></p>
+            <div className="grid gap-4 xl:grid-cols-2">
+              {items.map((video) => (
+                <article key={video.id} className="overflow-hidden rounded-xl border">
+                  <a href={video.url} target="_blank" rel="noreferrer" className="block aspect-video bg-muted">
+                    {video.thumbnail ? <img src={video.thumbnail} alt="" loading="lazy" className="h-full w-full object-cover" /> : null}
+                  </a>
+                  <div className="p-4">
+                    <h3 className="font-bold leading-snug">{video.title}</h3>
+                    <p className="mt-1 text-xs font-semibold text-primary">{video.channelName || "Unknown channel"}</p>
+                    <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                      <span>{formatNumber(video.views)} views</span>
+                      <span>{formatDate(video.uploadDate)}</span>
+                    </div>
+                    <p className="mt-3 text-xs leading-relaxed text-muted-foreground">{video.summary}</p>
+                    <a href={video.url} target="_blank" rel="noreferrer" className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline">
+                      Open video <ExternalLink className="size-3" />
+                    </a>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
+        ) : !loading ? (
+          <div className="p-8 text-center">
+            <PlaySquare className="mx-auto size-8 text-primary" />
+            <p className="mt-3 text-sm font-semibold">{emptyMessage}</p>
+            <p className="mx-auto mt-1 max-w-xl text-xs text-muted-foreground">Your own channel videos are excluded from these results.</p>
+          </div>
+        ) : null}
+      </>
+    );
+  }
+
   return (
-    <Card className="overflow-hidden">
-      <div className="grid grid-cols-2 border-b bg-muted/30 p-1">
+    <Card id="video-ideas" className="scroll-mt-24 overflow-hidden">
+      <div className="grid grid-cols-3 border-b bg-muted/30 p-1">
         <button
           type="button"
           onClick={() => setTab("ideas")}
@@ -125,6 +216,16 @@ export function UpcomingVideoIdeas({ videos, activeVideo }: { videos: Video[]; a
           )}
         >
           <PlaySquare className="size-4" /> Related Channel Videos
+        </button>
+        <button
+          type="button"
+          onClick={() => setTab("top")}
+          className={cn(
+            "focus-ring flex items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-xs font-bold transition",
+            tab === "top" ? "bg-card text-primary shadow-sm" : "text-muted-foreground hover:text-foreground",
+          )}
+        >
+          <TrendingUp className="size-4" /> Top Website Topic Videos
         </button>
       </div>
 
@@ -208,7 +309,7 @@ export function UpcomingVideoIdeas({ videos, activeVideo }: { videos: Video[]; a
             </div>
           ) : null}
         </>
-      ) : (
+      ) : tab === "related" ? (
         <>
           <div className="flex flex-col gap-3 border-b p-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -227,45 +328,27 @@ export function UpcomingVideoIdeas({ videos, activeVideo }: { videos: Video[]; a
             </Button>
           </div>
 
-          {relatedError ? <div className="m-4 rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-xs text-red-600">{relatedError}</div> : null}
-          {relatedLoading && !related.length ? (
-            <div className="grid gap-3 p-4 md:grid-cols-2">
-              {Array.from({ length: 4 }).map((_, index) => <div key={index} className="h-52 animate-pulse rounded-xl bg-muted" />)}
+          {videoResults(related, relatedQuery, relatedLoading, relatedError, "Select a library video, then find relevant top-performing videos.")}
+        </>
+      ) : (
+        <>
+          <div className="flex flex-col gap-3 border-b p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="font-bold">Top Website Topic Videos</h2>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Real high-view YouTube videos related to your broader WordPress and website-design niche.
+              </p>
             </div>
-          ) : null}
-
-          {related.length ? (
-            <div className="p-4">
-              <p className="mb-3 text-xs text-muted-foreground">Search context: <span className="font-semibold text-foreground">{relatedQuery}</span></p>
-              <div className="grid gap-4 xl:grid-cols-2">
-                {related.map((video) => (
-                  <article key={video.id} className="overflow-hidden rounded-xl border">
-                    <a href={video.url} target="_blank" rel="noreferrer" className="block aspect-video bg-muted">
-                      {video.thumbnail ? <img src={video.thumbnail} alt="" loading="lazy" className="h-full w-full object-cover" /> : null}
-                    </a>
-                    <div className="p-4">
-                      <h3 className="font-bold leading-snug">{video.title}</h3>
-                      <p className="mt-1 text-xs font-semibold text-primary">{video.channelName || "Unknown channel"}</p>
-                      <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                        <span>{formatNumber(video.views)} views</span>
-                        <span>{formatDate(video.uploadDate)}</span>
-                      </div>
-                      <p className="mt-3 text-xs leading-relaxed text-muted-foreground">{video.summary}</p>
-                      <a href={video.url} target="_blank" rel="noreferrer" className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline">
-                        Open video <ExternalLink className="size-3" />
-                      </a>
-                    </div>
-                  </article>
-                ))}
-              </div>
-            </div>
-          ) : !relatedLoading ? (
-            <div className="p-8 text-center">
-              <PlaySquare className="mx-auto size-8 text-primary" />
-              <p className="mt-3 text-sm font-semibold">Select a library video, then find relevant top-performing videos.</p>
-              <p className="mx-auto mt-1 max-w-xl text-xs text-muted-foreground">Your own channel videos are excluded from these results.</p>
-            </div>
-          ) : null}
+            <Button onClick={() => void findTopTopicVideos()} disabled={topLoading || !videos.length}>
+              {topLoading
+                ? <LoaderCircle className="size-4 animate-spin" />
+                : topVideos.length
+                  ? <RefreshCw className="size-4" />
+                  : <TrendingUp className="size-4" />}
+              {topLoading ? "Searching YouTube..." : topVideos.length ? "Refresh Top Videos" : "Find Top Videos"}
+            </Button>
+          </div>
+          {videoResults(topVideos, topQuery, topLoading, topError, "Find top-performing videos related to your website topic.")}
         </>
       )}
     </Card>

@@ -30,6 +30,26 @@ function removeUrls(value: string, urls: string[]): string {
   );
 }
 
+function extractSectionItems(value: string, heading: string): string[] {
+  const section = value.match(
+    new RegExp(
+      `\\b${escapeRegExp(heading)}\\s*:\\s*([\\s\\S]*?)(?=\\n\\s*(?:Topics Covered|Plugin\\s*&\\s*Resource Links|Resources?|Related Videos?|Related Searches|Focus Keywords|Tags)\\s*:|$)`,
+      "i",
+    ),
+  )?.[1];
+
+  if (!section) return [];
+
+  return Array.from(
+    new Set(
+      section
+        .split(/\n+/)
+        .map((item) => item.replace(/^\s*(?:[-*•]|\d+[.)])\s*/, "").trim())
+        .filter(Boolean),
+    ),
+  ).slice(0, 8);
+}
+
 function paragraphsFrom(value: string): string[] {
   const existing = value
     .split(/\n\s*\n/)
@@ -79,11 +99,15 @@ export function formatAiDescription(
     .replace(/\s+/g, " ")
     .match(/[^.!?]*(?:subscribe|like this video|leave a comment|share this video|join the channel)[^.!?]*[.!?]/i)?.[0]
     ?.trim();
-  if (seo?.secondaryKeywords.length) {
+  const topicsCovered = extractSectionItems(description, "Topics Covered");
+  const topicItems = topicsCovered.length
+    ? topicsCovered
+    : seo?.secondaryKeywords.slice(0, 8) ?? [];
+  if (topicItems.length) {
     sections.push([
-      "Topics Covered:",
+      "📚 Topics Covered:",
       "",
-      ...seo.secondaryKeywords.slice(0, 8).map((keyword) => `- ${keyword}`),
+      ...topicItems.map((topic) => `✓ ${topic}`),
     ].join("\n"));
   }
 
@@ -95,12 +119,12 @@ export function formatAiDescription(
     ].join("\n").trimEnd());
   }
 
-  if (seo?.relatedSearchKeywords.length) {
+  if (relatedVideos.length) {
     sections.push([
-      "Related Searches:",
+      "▶️ Related Videos:",
       "",
-      ...seo.relatedSearchKeywords.map((keyword) => `- ${keyword}`),
-    ].join("\n"));
+      ...relatedVideos.flatMap((video) => [`▶️ ${video.title}`, video.url, ""]),
+    ].join("\n").trimEnd());
   }
 
   if (seo) {
@@ -114,14 +138,6 @@ export function formatAiDescription(
 
   if (seo?.tags.length) {
     sections.push(`Tags:\n\n${seo.tags.join(", ")}`);
-  }
-
-  if (relatedVideos.length) {
-    sections.push([
-      "▶️ Related Videos:",
-      "",
-      ...relatedVideos.flatMap((video) => [`▶️ ${video.title}`, video.url, ""]),
-    ].join("\n").trimEnd());
   }
 
   if (callToAction && !cleanBody.toLowerCase().includes(callToAction.toLowerCase())) {
