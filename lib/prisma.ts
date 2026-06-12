@@ -1,6 +1,6 @@
 import "server-only";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
-import { PrismaClient } from "@/lib/generated/prisma/client";
+import { PrismaClient } from "@/lib/generated/prisma";
 
 const globalPrisma = globalThis as typeof globalThis & {
   prisma?: PrismaClient;
