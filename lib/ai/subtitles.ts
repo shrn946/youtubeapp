@@ -80,7 +80,7 @@ export function normalizeAndValidateSrt(raw: string): string {
   let previousEnd = -1;
   const cues: Array<{ start: number; end: number; lines: string[] }> = [];
   parsedCues.forEach((cue, index) => {
-    let start = Math.max(cue.start, previousEnd);
+    const start = Math.max(cue.start, previousEnd);
     let end = cue.end;
     if (end <= start) {
       const nextStart = parsedCues[index + 1]?.start;
